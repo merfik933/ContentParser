@@ -1,2 +1,10 @@
 # Virtual Environment
 .venv
+
+# Playwright browsers
+chrome-win
+
+# PyInstaller
+dist
+build
+*.spec
