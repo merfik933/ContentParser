@@ -65,8 +65,7 @@ def main():
             print("Try again")
             return get_start_with_value()
     
-    if parser_name != "werk":
-        start_with = get_start_with_value()
+    start_with = get_start_with_value()
 
     # Start parser
     if parser_name == "SBB":
@@ -84,7 +83,7 @@ def main():
     elif parser_name == "arbetsformedlingen":
         arbetsformedlingenParser.start(main_dir, start_with)
     elif parser_name == "werk":
-        werkParser.start(main_dir)
+        werkParser.start(main_dir, start_with)
 
     input("Press Enter to exit...")
     
