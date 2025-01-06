@@ -10,6 +10,12 @@ def add_row(df, row):
     df = pd.concat([df, row], ignore_index=True)
     return df
 
+def add_rows(df, rows):
+    for row in rows:
+        row = pd.DataFrame([row])
+        df = pd.concat([df, row], ignore_index=True)
+    return df
+
 def save_df(df, main_dir, file_name, sheet_name):
     file_path = main_dir + "\\" + file_name
     if os.path.exists(file_path):
