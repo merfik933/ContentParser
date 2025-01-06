@@ -52,6 +52,7 @@ def start(main_dir, start_with_page=1):
             print(f"Getting the page {page_num} for the category {category_text}...")
             # Get the root page
             pm.goto_page(browser, url)
+            current_page = 1
 
             # Wait for the page to load
             pm.wait_for(browser, "span.vacatures-zoeken__text")
@@ -79,6 +80,8 @@ def start(main_dir, start_with_page=1):
             while True:
                 # Go to the page
                 last_page_num = int(rm.get_text(page, "li:nth-last-child(2) .pagination__button"))
+                if current_page == last_page_num:
+                    return None
                 if page_num <= last_page_num:
                     # Click on the page button
                     page_button = pm.click_element(browser, f"li .pagination__button[aria-label='Ga naar pagina  {page_num}']")
@@ -109,7 +112,9 @@ def start(main_dir, start_with_page=1):
 
         progress_counter = 0
         while True:
-            page = pm.get_current_page(browser)
+            is_goto_next_page = True
+            start_progress_counter = progress_counter
+            rows = []
 
             # Get results
             results = rm.get_elements(page, ".result-block__link")
@@ -117,12 +122,26 @@ def start(main_dir, start_with_page=1):
             if not results:
                 print(f"Error while getting results. Retrying... Get the page {current_page_num} again.")
                 goto_page(current_page_num)
-                continue
+                is_goto_next_page = False
+                break
 
             results_len = len(results)
 
             # Parse results
             for i in range(results_len):
+                page = pm.get_current_page(browser)
+
+                # Get results
+                results = rm.get_elements(page, ".result-block__link")
+
+                if not results:
+                    print(f"Error while getting results. Retrying... Get the page {current_page_num} again.")
+                    goto_page(current_page_num)
+                    is_goto_next_page = False
+                    break
+
+                results_len = len(results)
+
                 # Set start time to calculate the time it takes to parse the page
                 start_time = time.time()
 
@@ -140,6 +159,8 @@ def start(main_dir, start_with_page=1):
                 html = browser.content()
                 soup = bs4.BeautifulSoup(html, "html.parser")
                 vacancy_page = soup
+
+                # TODO: Add print category with page number
 
                 # Get vacancy name
                 vacancy_name = rm.get_text(vacancy_page, "h2.vacature-detail__title")
@@ -163,12 +184,9 @@ def start(main_dir, start_with_page=1):
                     "Website": website,
                     "Category": category_text
                 }
-                df = df_util.add_row(df, row)
+                rows.append(row)
 
-                # Save the data to the file
                 progress_counter += 1
-                if progress_counter % save_file_interval == 0:
-                    df_util.save_df(df, main_dir, xlsx_file_name, xlsx_sheet_name)
 
                 # Print the status
                 end_time = time.time()
@@ -192,13 +210,29 @@ def start(main_dir, start_with_page=1):
                 # Wait for the page to load
                 pm.wait_for(browser, "button.button.result-block__link")
 
+            if not is_goto_next_page:
+                progress_counter = start_progress_counter
+                continue
 
+            # Add the rows to the data frame
+            df = df_util.add_rows(df, rows)
+            df_util.save_df(df, main_dir, xlsx_file_name, xlsx_sheet_name)
+            
             # Get the next page
             print(f"Page {current_page_num} parsed. Getting the next page...")
-            button = pm.click_element(browser, "li:has(.pagination__button--active) + li button")
+
             current_page_num += 1
-            if button == None:
-                break
+
+            if current_page_num % 25 == 0:
+                print(f"Refreshing the page...")
+                page = goto_page(current_page_num)
+                if not page:
+                    break
+            else:
+                # Get the next page
+                button = pm.click_element(browser, "li:has(.pagination__button--active) + li button")
+                if button == None:
+                    break
 
             # Wait for the page to load
             time.sleep(3)
@@ -218,4 +252,4 @@ if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.realpath(__file__))
     main_dir = os.path.dirname(current_dir)
 
-    start(main_dir, 10)
+    start(main_dir)
