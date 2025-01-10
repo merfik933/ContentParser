@@ -105,6 +105,7 @@ def start(main_dir, start_with_page=1):
             
         page = goto_page(start_with_page)
         current_page_num = start_with_page
+        start_with_page = 1
 
         # Get the number of results
         number_of_results_text = rm.get_text(page, ".vacatures-zoeken__results-header h2")
@@ -146,8 +147,11 @@ def start(main_dir, start_with_page=1):
                 start_time = time.time()
 
                 # Get vacancy page
-                result_button = pm.get_elements(browser, "button.button.result-block__link")[i]
-                pm.click_locator(result_button)
+                try:
+                    result_button = pm.get_elements(browser, "button.button.result-block__link")[i]
+                    pm.click_locator(result_button)
+                except Exception as e:
+                    break
 
                 # Wait for the page to load
                 pm.wait_for(browser, "h2.vacature-detail__title")
